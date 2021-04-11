@@ -6,6 +6,8 @@ import * as uuid from 'uuid'
 import {TodoItem} from '../models/TodoItem'
 import {CreateTodoRequest} from '../requests/CreateTodoRequest'
 import { UpdateTodoRequest } from '../requests/UpdateTodoRequest'
+import { createLogger } from '../utils/logger'
+
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -15,7 +17,8 @@ export class ItemAccess {
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
     private readonly todosTable = process.env.TODOS_TABLE,
-    private readonly indexName = process.env.INDEX_NAME) {
+    private readonly indexName = process.env.INDEX_NAME,
+    private readonly logger = createLogger('itemAcess')) {
   }
   
   /**
@@ -93,6 +96,27 @@ export class ItemAccess {
     const result = await this.docClient.update(params).promise();
     return result.Attributes as TodoItem;
     
+  }
+
+  /**
+   * Delete a TODO item
+   * @param userId 
+   * @param todoId 
+   */
+  async DeleteItem(userId: string, todoId: string): Promise<boolean> {
+    
+    const deletion = await this.docClient.delete({
+      TableName: this.todosTable,
+      Key: {
+        userId: userId,
+        todoId: todoId
+      },
+      ReturnValues: "ALL_OLD",
+    }).promise();
+
+    this.logger.info("Delete item: " + JSON.stringify(deletion));
+
+    return deletion.Attributes? true: false;
   }
 }
 
