@@ -22,7 +22,6 @@ functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  # TODO: Configure this function
   GetTodos:
     handler: src/lambda/http/getTodos.handler
     events:
@@ -34,9 +33,9 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}   
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.INDEX_NAME}   
 
-  # TODO: Configure this function
+  
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
@@ -47,11 +46,9 @@ functions:
           request:
             schemas:
               application/json:
-                schema: ${file(src/models/TodoRequest.json)}
+                schema: ${file(src/requests/CreateTodoRequest.json)}
                 name: PostTODOS
                 description: 'Create a TODO item'
-
-
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -59,7 +56,6 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
     
 
-  # TODO: Configure this function
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
     events:
@@ -67,6 +63,17 @@ functions:
           method: patch
           path: todos/{todoId}
           cors: true
+          request:
+            schemas:
+              application/json:
+                schema: ${file(src/requests/UpdateTodoRequest.json)}
+                name: UpdateTODO
+                description: 'Update a TODO item'
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # TODO: Configure this function
   DeleteTodo:

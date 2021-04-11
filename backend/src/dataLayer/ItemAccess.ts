@@ -5,6 +5,7 @@ import * as uuid from 'uuid'
 
 import {TodoItem} from '../models/TodoItem'
 import {CreateTodoRequest} from '../requests/CreateTodoRequest'
+import { UpdateTodoRequest } from '../requests/UpdateTodoRequest'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -13,7 +14,25 @@ export class ItemAccess {
 
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
-    private readonly groupsTable = process.env.TODOS_TABLE) {
+    private readonly todosTable = process.env.TODOS_TABLE,
+    private readonly indexName = process.env.INDEX_NAME) {
+  }
+  
+  /**
+   * Get all TODO items from user
+   * @param userId 
+   */
+  async GetItems(userId: string) {
+    
+    //Query using the global index
+    return await this.docClient.query({
+        TableName : this.todosTable,
+        IndexName : this.indexName,
+        KeyConditionExpression: 'userId = :userId',
+        ExpressionAttributeValues: {
+          ':userId': userId
+      }
+    }).promise();
   }
 
   /**
@@ -37,11 +56,43 @@ export class ItemAccess {
     
     //put item into the DB
     await this.docClient.put({
-        TableName: this.groupsTable,
+        TableName: this.todosTable,
         Item: item
     } ).promise()
 
     return item;
+  }
+
+  /**
+   *  update a TODO item
+   * @param userId User id
+   * @param todoId TODO id
+   * @param updatedTodo TODO to be updated
+   * @returns the updated item
+   */
+  async UdateItem(userId: String, todoId: string, updatedTodo: UpdateTodoRequest): Promise<TodoItem> {
+    
+    const params = {
+      TableName: this.todosTable,
+      Key: {
+        userId: userId,
+        todoId: todoId
+      },
+      ExpressionAttributeNames: {
+        '#itemName': 'name',
+      },
+      ExpressionAttributeValues: {
+        ':name': updatedTodo.name,
+        ':dueDate': updatedTodo.dueDate,
+        ':done': updatedTodo.done,
+      },
+      UpdateExpression: 'SET #itemName = :name, dueDate = :dueDate, done = :done',
+      ReturnValues: 'ALL_NEW',
+    };
+
+    const result = await this.docClient.update(params).promise();
+    return result.Attributes as TodoItem;
+    
   }
 }
 

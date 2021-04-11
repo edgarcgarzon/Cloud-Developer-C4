@@ -8,7 +8,7 @@ import { middyfy } from '../../../libs/lambda';
 const api: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   
   const newTodo: CreateTodoRequest = JSON.parse(event.body)
-  const item = await new ItemAccess().createItem(newTodo, "Dummy User Id");
+  const item = await new ItemAccess().createItem(newTodo, "12345");
   
   return {
     statusCode: 201,
