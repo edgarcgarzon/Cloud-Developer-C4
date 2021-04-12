@@ -3,22 +3,23 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } f
 
 import { ItemAccess } from '../../dataLayer/itemAccess'
 import { middyfy } from '../../../libs/lambda';
+import { getUserId } from '../utils';
 
 export const api: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   
-  const userId = "12345"
+  const userId = getUserId(event);
   const todos = await new ItemAccess().GetItems(userId);
     
   if (todos.Count !== 0) {
     return {
       statusCode: 200,
-      body: JSON.stringify(todos.Items)
+      body: JSON.stringify({items: todos.Items})
     }
   }
 
   return {
-    statusCode: 404,
-    body: ''
+    statusCode: 200,
+    body: JSON.stringify({items: []})
   }
 }
 

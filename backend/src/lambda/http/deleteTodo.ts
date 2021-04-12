@@ -4,11 +4,12 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } f
 
 import { ItemAccess } from '../../dataLayer/itemAccess'
 import { middyfy } from '../../../libs/lambda';
+import { getUserId } from '../utils';
 
 export const api: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const todoId = event.pathParameters.todoId
 
-  const userId = "12345"
+  const userId = getUserId(event);
   const deleteTodo = await new ItemAccess().DeleteItem(userId, todoId);
 
   if (deleteTodo) {
