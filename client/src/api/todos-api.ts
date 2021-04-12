@@ -59,12 +59,15 @@ export async function getUploadUrl(
   idToken: string,
   todoId: string
 ): Promise<string> {
+
+  console.log(`${apiEndpoint}/todos/${todoId}/attachment`);
+
   const response = await Axios.post(`${apiEndpoint}/todos/${todoId}/attachment`, '', {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${idToken}`
     }
-  })
+  })  
   return response.data.uploadUrl
 }
 

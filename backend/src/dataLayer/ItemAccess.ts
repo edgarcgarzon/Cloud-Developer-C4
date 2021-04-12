@@ -14,11 +14,26 @@ const XAWS = AWSXRay.captureAWS(AWS)
 
 export class ItemAccess {
 
+
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
     private readonly todosTable = process.env.TODOS_TABLE,
     private readonly indexName = process.env.INDEX_NAME,
     private readonly logger = createLogger('itemAcess')) {
+  }
+
+  /**
+   * 
+   * @param todoId Get item by Id
+   */
+  async GetItem(todoId: string, userId: string) {
+    return await this.docClient.get({
+      TableName: this.todosTable,
+      Key: {
+        todoId: todoId,
+        userId: userId,
+      }
+    }).promise()
   }
   
   /**
@@ -46,15 +61,17 @@ export class ItemAccess {
    */
   async createItem(request: CreateTodoRequest, userId: string): Promise<TodoItem> {
     
+    const todoId = uuid.v4();
+
     //Define item
     const item:TodoItem = {
         userId: userId,
-        todoId: uuid.v4(),
+        todoId: todoId,
         createdAt: new Date().toISOString(),
         name: request.name,
         dueDate: request.dueDate,
         done: false,
-        attachmentUrl: "www.udacity.com"
+        attachmentUrl: ""
     };
     
     //put item into the DB
@@ -75,6 +92,8 @@ export class ItemAccess {
    */
   async UdateItem(userId: String, todoId: string, updatedTodo: UpdateTodoRequest): Promise<TodoItem> {
     
+    this.logger.info(`Update item userId: ${userId}, todoId: ${todoId}`)
+
     const params = {
       TableName: this.todosTable,
       Key: {
@@ -89,13 +108,47 @@ export class ItemAccess {
         ':dueDate': updatedTodo.dueDate,
         ':done': updatedTodo.done,
       },
-      UpdateExpression: 'SET #itemName = :name, dueDate = :dueDate, done = :done',
+      UpdateExpression: 'set #itemName = :name, dueDate = :dueDate, done = :done',
       ReturnValues: 'ALL_NEW',
     };
 
     const result = await this.docClient.update(params).promise();
+    this.logger.info(`Update item: ${JSON.stringify(result.Attributes)}`);
+
     return result.Attributes as TodoItem;
     
+  }
+  /**
+   * Update the URL attachment
+   * @param userId 
+   * @param todoId 
+   * @param attachmentUrl 
+   * @returns 
+   */
+  async UdateUrl(userId: String, todoId: string, attachmentUrl: string): Promise<TodoItem> {
+    
+    this.logger.info(`Update URL userId: ${userId}, todoId: ${todoId}`)
+
+    const params = {
+      TableName: this.todosTable,
+      Key: {
+        userId: userId,
+        todoId: todoId
+      },
+      ExpressionAttributeNames: {
+        '#au': 'attachmentUrl',
+      },
+      ExpressionAttributeValues: {
+        ':attachmentUrl': attachmentUrl,
+      },
+      UpdateExpression: 'set #au = :attachmentUrl',
+      ReturnValues: 'ALL_NEW',
+    };
+
+    const result = await this.docClient.update(params).promise();
+    this.logger.info(`Update URL item: ${JSON.stringify(result.Attributes)}`);
+
+    return result.Attributes as TodoItem;
   }
 
   /**
