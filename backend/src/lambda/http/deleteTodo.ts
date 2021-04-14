@@ -2,16 +2,20 @@ import 'source-map-support/register'
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
 
-import { ItemAccess } from '../../dataLayer/itemAccess'
 import { middyfy } from '../../../libs/lambda';
 import { getUserId } from '../utils';
+import { todoLogic } from '../../businessLogic/todoLogic';
 
 export const api: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  
+  //Get parameters from event
   const todoId = event.pathParameters.todoId
-
   const userId = getUserId(event);
-  const deleteTodo = await new ItemAccess().DeleteItem(userId, todoId);
+  
+  //Call the logic
+  const deleteTodo = await new todoLogic().deleteTodo(userId, todoId);
 
+  //Send response
   if (deleteTodo) {
     return {
       statusCode: 200,
@@ -26,3 +30,5 @@ export const api: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): 
 }
 
 export const handler = middyfy(api);
+
+
